@@ -1,0 +1,14 @@
+{
+  "name": "remotionagent",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @remotionagent/web -- --port 3101",
+    "dev:worker": "npm run dev --workspace @remotionagent/worker",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}

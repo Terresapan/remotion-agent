@@ -1,0 +1,34 @@
+services:
+  web:
+    container_name: remotionagent-web
+    image: node:22-bookworm
+    working_dir: /app
+    command: sh -c "npm install && npm run dev:web"
+    ports:
+      - "3101:3101"
+    volumes:
+      - ../../:/app
+    environment:
+      - NODE_ENV=development
+      - WORKER_API_BASE_URL=http://remotionagent-worker:3201
+
+  worker:
+    container_name: remotionagent-worker
+    build:
+      context: ../../
+      dockerfile: infra/docker/worker.Dockerfile
+    working_dir: /app
+    command: sh -c "npm run dev:worker"
+    volumes:
+      - ../../:/app
+      - /Users/terresa/Documents/Code/template/remotion-teaching-template:/template/remotion-teaching-template:ro
+      - /Users/terresa/.config/openshell:/root/.config/openshell:ro
+      - ./openshell-config/gateways/openshell/metadata.json:/root/.config/openshell/gateways/openshell/metadata.json:ro
+    environment:
+      - NODE_ENV=development
+      - WORKER_PORT=3201
+      - REMOTION_TEMPLATE_PATH=/template/remotion-teaching-template
+      - OPENSHELL_BRIDGE_PYTHON=/root/.local/share/uv/tools/openshell/bin/python3
+      - OPENSHELL_GATEWAY_ENDPOINT=https://host.docker.internal:8080
+    expose:
+      - "3201"

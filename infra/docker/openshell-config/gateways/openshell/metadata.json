@@ -1,0 +1,6 @@
+{
+  "name": "openshell",
+  "gateway_endpoint": "https://host.docker.internal:8080",
+  "is_remote": true,
+  "gateway_port": 8080
+}
