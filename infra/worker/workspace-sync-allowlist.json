@@ -1,0 +1,15 @@
+{
+  "include": [
+    "src/**",
+    "public/**",
+    "scripts/**",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "remotion.config.ts",
+    ".env"
+  ],
+  "excludeDirs": [".git", "node_modules", ".next", "dist", ".agents", ".windsurf"],
+  "excludeGlobs": ["**/*.mp4", "**/*.mov", "**/*.mkv", "**/*.wav", "**/*.aiff"],
+  "excludeExtensions": []
+}

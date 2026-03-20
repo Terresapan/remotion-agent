@@ -8,4 +8,5 @@ coverage
 .env
 workspaces/*
 !workspaces/.gitkeep
+job-assets/*
 apps/web/.next

@@ -2,118 +2,104 @@
 
 ## Purpose
 
-Track the staged evolution of the Remotion agent from a local personal tool into a more complete product with visual preview, sandboxed execution, and future cloud deployment.
+Track the staged evolution of the Remotion agent from a local personal tool into a complete system with:
+- sandboxed execution
+- reusable instruction memory
+- explicit asset ingestion
+- preview UX
+- future cloud deployment
 
 ## Guiding Direction
 
 The target system is:
 - Next.js as the control plane and visual frontend
-- Deep Agents JS as the worker runtime
-- OpenShell as the local sandbox backend
-- the Remotion template as the reusable scaffold
-- NVIDIA API as the first pluggable model provider
+- worker API as execution orchestrator
+- OpenShell as the sandbox backend
+- template repo as code scaffold
+- host-backed memory/skills as reusable instructions
+- NVIDIA API as first model provider
 
-## Phase 1
+## Current Status
 
-Local single-user MVP:
-- Next.js UI for job creation and status
-- one worker process
-- one sandboxed workspace per job
-- Docker Desktop for app services
-- OpenShell for per-job execution
-- workspace copied from the template
-- worker can validate and render one video
+### Completed
 
-What the product looks like:
-- chat/instruction form
-- job list
-- logs
-- basic artifact output
+- `web` and `worker` run in Docker with stable project-specific ports.
+- Worker API is separated into its own service and called over HTTP from web routes.
+- Worker bootstrap moved into Dockerfile for deterministic startup.
+- Structured worker logs added for job lifecycle steps (`create`, `sync`, `sync_assets`, `execute`).
+- OpenShell is installed in worker image and verified importable at runtime.
+- Local gateway recovered and verified healthy.
+- Persistent sandbox `remotionagent-local` created and now in `Ready` phase.
+- Workspace sync changed from broad recursive copy to configurable allowlist file:
+  - `infra/worker/workspace-sync-allowlist.json`
+- Per-job `AGENTS.md` generation removed from workspace seeding.
+- Memory/skills are now env-configurable placeholders:
+  - `AGENT_MEMORY_FILE`
+  - `AGENT_SKILLS_ROOTS`
+- Asset ingestion path implemented:
+  - `POST /jobs/:jobId/assets`
+  - `GET /jobs/:jobId/assets`
+  - assets stored in `job-assets/<jobId>/public/assets` and synced before run steps.
+- Empty policy placeholder added:
+  - `infra/openshell/policy.yaml`
 
-## Phase 2
+### Working but intentionally incomplete
 
-Worker-hosted preview:
-- keep the Next.js app as the control plane
-- let the worker manage a preview/dev server for a workspace
-- surface the preview inside the UI through an iframe, proxy, or preview pane
+- `policy.yaml` is not designed or applied yet.
+- Memory/skills are configurable but not yet wired through a true deepagents `FilesystemBackend` route in this worker runtime.
+- Asset upload currently accepts JSON + base64, not multipart streaming.
+- No preview server lifecycle in worker yet.
 
-Why this phase matters:
-- it is the shortest path from the current `npm run dev` workflow
-- it keeps preview fidelity high
-- it avoids building a browser-native preview system too early
+## Next Steps
 
-This is the recommended MVP preview path.
+### Phase A: Stabilize sandbox + policy baseline
 
-## Phase 3
+1. Define first project policy in `infra/openshell/policy.yaml`.
+2. Apply policy to `remotionagent-local` and validate:
+- required filesystem access for job execution
+- required outbound endpoints for research/model/tool calls
+3. Add runbook commands to docs for policy export/apply/check.
 
-Hybrid preview:
-- keep worker-hosted preview as a fallback
-- add structured scene and caption inspection in Next.js
-- add scene list, manifest browser, and timing inspection panels
+### Phase B: Memory/skills architecture completion
 
-Goal:
-- reduce dependency on the worker preview server for every visual action
-- move toward a more product-like editing experience
+1. Bind real paths for:
+- `AGENT_MEMORY_FILE` (template root `AGENTS.md`)
+- `AGENT_SKILLS_ROOTS` (template `.agents`, `scripts`)
+2. Add explicit worker-side loader contract for memory/skills files used by generation/editing steps.
+3. Document precedence rules between reusable memory and per-job metadata.
 
-## Phase 4
+### Phase C: Asset pipeline hardening
 
-Next.js-native visual preview:
-- embed a Remotion-based player/editor surface directly in the Next.js UI
-- drive preview from structured state rather than only from a worker-hosted dev server
-- use the worker mainly for file edits, heavy validation, and final render
+1. Add multipart upload support for large assets.
+2. Add MIME/extension policy and per-type size caps.
+3. Add cleanup lifecycle for `job-assets` after job archival/deletion.
+4. Add API-level tests for upload/list/sync behaviors.
 
-What the product becomes:
-- not just a chatbox
-- a lightweight video editing and preview tool
+### Phase D: Preview UX
 
-## Preview Architecture Options
+1. Implement worker-hosted preview endpoint lifecycle for active workspace.
+2. Surface preview in Next.js UI.
+3. Keep data model compatible with future Next.js-native Remotion player migration.
 
-### Option A
-
-Next.js-native preview:
-- Remotion player embedded in the frontend
-- preview driven by structured manifests and scene state
-- better long-term product design
-- better cloud story
-- more engineering work upfront
-
-### Option B
-
-Worker-hosted preview:
-- worker runs a preview/dev process for the active workspace
-- frontend consumes the preview
-- faster to build first
-- closer to the current workflow
-- less elegant long term
-
-## Preview Recommendation
-
-Recommended path:
-1. Start with Option B.
-2. Keep the data model clean so it can later support Option A.
-3. Move to Option A once the core job system, workspace lifecycle, and validation loop are stable.
-
-## Deployment Roadmap
+## Deployment Direction
 
 ### Local
 
-Use:
-- Docker Desktop for `web` and `worker`
-- OpenShell for sandboxed job execution
-- host filesystem for template, workspaces, memory, and skills
+- Docker Desktop: `web` + `worker`
+- OpenShell gateway + persistent sandbox
+- host filesystem for template/workspaces/memory/skills/assets
 
 ### Future Cloud
 
-Use:
-- Vercel for the Next.js frontend
-- Google Cloud or another backend platform for worker and job API
-- persistent storage for workspaces and artifacts
-- a replaceable sandbox backend so local OpenShell can later be swapped for cloud execution
+- Vercel for frontend
+- cloud worker API runtime
+- persistent storage for workspaces/assets/memory
+- replaceable sandbox backend (OpenShell local now, cloud sandbox later)
 
-## Key Milestone Test
+## Invariants
 
-The roadmap is on track if each phase preserves this invariant:
-- the control plane stays outside the sandbox
-- the worker stays replaceable
-- the sandbox backend stays swappable
-- the template remains the workflow contract
+The roadmap is on track if these stay true:
+- control plane remains outside sandbox
+- worker remains replaceable
+- sandbox backend remains swappable
+- template remains the workflow contract

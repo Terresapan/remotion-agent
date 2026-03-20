@@ -10,11 +10,14 @@ import {
   type CreateJobInput,
   type JobStatus,
   type RunJobStepInput,
+  type UploadJobAssetInput,
 } from '@remotionagent/shared';
 import type {SandboxAdapter, SandboxWorkspace} from './openshellAdapter';
 import {OpenShellAdapter} from './openshellAdapter';
 import {getNvidiaRuntimeSummary} from './model';
 import {withJobStepLogging} from './jobLogger';
+import {loadWorkspaceSyncPolicy, shouldSyncPath} from './workspaceSyncPolicy';
+import {listJobAssets, resolveJobAssetsPath, uploadJobAsset} from './assets';
 
 function resolveRepoRoot() {
   if (process.env.REMOTION_REPO_ROOT) {
@@ -41,8 +44,12 @@ const DEFAULT_TEMPLATE_PATH =
   '/Users/terresa/Documents/Code/template/remotion-teaching-template';
 const WORKSPACES_ROOT = process.env.REMOTION_WORKSPACES_ROOT ?? path.join(REPO_ROOT, 'workspaces');
 const JOB_MEMORY_DIR = '.deepagents';
-const JOB_MEMORY_FILE = 'AGENTS.md';
 const MODULE_PATH = fileURLToPath(import.meta.url);
+const AGENT_MEMORY_FILE = process.env.AGENT_MEMORY_FILE ?? '';
+const AGENT_SKILLS_ROOTS = (process.env.AGENT_SKILLS_ROOTS ?? '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const inMemoryJobs = new Map<string, ReturnType<typeof jobRecordSchema.parse>>();
 const inMemoryRuntime = new Map<
@@ -62,13 +69,15 @@ const STEP_COMMANDS: Record<RunJobStepInput['stepId'], string> = {
 };
 
 async function copyTemplateWorkspace(targetPath: string) {
+  const syncPolicy = await loadWorkspaceSyncPolicy(REPO_ROOT);
   await fs.rm(targetPath, {recursive: true, force: true});
   await fs.mkdir(path.dirname(targetPath), {recursive: true});
   await fs.cp(DEFAULT_TEMPLATE_PATH, targetPath, {
     recursive: true,
     filter(source) {
-      const name = path.basename(source);
-      return !['.git', 'node_modules', '.next', 'dist'].includes(name);
+      const relativePath = path.relative(DEFAULT_TEMPLATE_PATH, source);
+      const isDirectory = fsSync.statSync(source).isDirectory();
+      return shouldSyncPath(relativePath, isDirectory, syncPolicy);
     },
   });
 }
@@ -76,21 +85,6 @@ async function copyTemplateWorkspace(targetPath: string) {
 async function seedWorkspaceMetadata(jobId: string, input: CreateJobInput, targetPath: string) {
   const memoryPath = path.join(targetPath, JOB_MEMORY_DIR);
   await fs.mkdir(memoryPath, {recursive: true});
-
-  const agentMemory = [
-    '# Remotion Job Memory',
-    '',
-    `- jobId: ${jobId}`,
-    `- topic: ${input.topic}`,
-    `- targetLength: ${input.targetLength ?? 'unspecified'}`,
-    '',
-    '## Rules',
-    '- Treat this workspace as disposable job output cloned from the golden Remotion template.',
-    '- Prefer editing files inside this workspace instead of changing the template source.',
-    '- Run targeted validation before suggesting a render is complete.',
-  ].join('\n');
-
-  await fs.writeFile(path.join(memoryPath, JOB_MEMORY_FILE), agentMemory, 'utf8');
   await fs.writeFile(
     path.join(memoryPath, 'job-input.json'),
     JSON.stringify(input, null, 2),
@@ -134,6 +128,10 @@ export async function createJob(
     ...job,
     hostWorkspacePath,
     sandboxName: workspace.sandboxName,
+    memory: {
+      memoryFile: AGENT_MEMORY_FILE || null,
+      skillsRoots: AGENT_SKILLS_ROOTS,
+    },
     modelProvider: getNvidiaRuntimeSummary(),
   };
 }
@@ -144,6 +142,18 @@ export function listJobs() {
 
 export function getJob(jobId: string) {
   return inMemoryJobs.get(jobId) ?? null;
+}
+
+export async function addJobAsset(jobId: string, input: UploadJobAssetInput) {
+  const job = inMemoryJobs.get(jobId);
+  if (!job) return null;
+  return uploadJobAsset(REPO_ROOT, jobId, input);
+}
+
+export async function getJobAssets(jobId: string) {
+  const job = inMemoryJobs.get(jobId);
+  if (!job) return null;
+  return listJobAssets(REPO_ROOT, jobId);
 }
 
 export async function runJobStep(
@@ -166,6 +176,13 @@ export async function runJobStep(
     status: 'running',
     stage: `running:${parsed.stepId}`,
   });
+
+  const jobAssetsPath = resolveJobAssetsPath(REPO_ROOT, jobId);
+  if (fsSync.existsSync(jobAssetsPath)) {
+    await withJobStepLogging(jobId, 'sync_assets', async () =>
+      adapter.syncFromLocal(runtime.workspace, jobAssetsPath)
+    );
+  }
 
   const result = await withJobStepLogging(jobId, 'execute', async () =>
     adapter.runCommand(runtime.workspace, command, {

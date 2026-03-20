@@ -1,4 +1,4 @@
-type JobStep = 'create' | 'sync' | 'execute';
+type JobStep = 'create' | 'sync' | 'sync_assets' | 'execute';
 type JobEvent = 'step_started' | 'step_completed' | 'step_failed';
 
 function normalizeError(error: unknown) {
@@ -86,4 +86,3 @@ export function logJobError(
     })
   );
 }
-

@@ -43,3 +43,11 @@ export const runJobStepSchema = z.object({
 });
 
 export type RunJobStepInput = z.infer<typeof runJobStepSchema>;
+
+export const uploadJobAssetSchema = z.object({
+  filename: z.string().min(1).max(255),
+  contentBase64: z.string().min(1),
+  mimeType: z.string().min(1).max(255).optional(),
+});
+
+export type UploadJobAssetInput = z.infer<typeof uploadJobAssetSchema>;

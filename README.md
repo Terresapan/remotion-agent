@@ -27,6 +27,12 @@ The project uses:
    - `validate:template`
    - `build`
 
+## Assets API
+
+- `POST /jobs/:jobId/assets` uploads a job-scoped asset (JSON payload with `filename`, `contentBase64`, optional `mimeType`).
+- `GET /jobs/:jobId/assets` lists uploaded assets.
+- Assets are stored under host `job-assets/<jobId>/public/assets` and synced into sandbox before each run step.
+
 ## Logging
 
 Worker emits structured JSON logs for each job step:
@@ -37,7 +43,14 @@ Worker emits structured JSON logs for each job step:
 This currently covers sandbox lifecycle execution points:
 - `create` (create workspace)
 - `sync` (sync local files into sandbox)
+- `sync_assets` (sync uploaded job assets into sandbox)
 - `execute` (run command in sandbox)
+
+## Sync Policy
+
+- Workspace sync behavior is file-driven via `infra/worker/workspace-sync-allowlist.json`.
+- Override location with `WORKSPACE_SYNC_ALLOWLIST_FILE`.
+- Reusable memory/skills paths are env-configurable (`AGENT_MEMORY_FILE`, `AGENT_SKILLS_ROOTS`) and are not hardcoded.
 
 ## Local Run (Docker)
 
@@ -56,6 +69,7 @@ Services:
 - Docker Desktop running
 - OpenShell config mounted into worker container (`~/.config/openshell`)
 - gateway metadata configured for local OpenShell endpoint
+- project policy placeholder lives at `infra/openshell/policy.yaml` for future policy design
 
 ## NVIDIA Model Provider
 
@@ -74,4 +88,3 @@ Large template files can exceed sync limits. Keep the base template lean:
 - exclude build artifacts
 - exclude heavy media from baseline template
 - inject large assets per-job or fetch inside sandbox when needed
-

@@ -1,6 +1,6 @@
 import {createServer, type IncomingMessage, type ServerResponse} from 'node:http';
-import {createJobSchema, runJobStepSchema} from '@remotionagent/shared';
-import {createJob, getJob, listJobs, runJobStep} from './index';
+import {createJobSchema, runJobStepSchema, uploadJobAssetSchema} from '@remotionagent/shared';
+import {addJobAsset, createJob, getJob, getJobAssets, listJobs, runJobStep} from './index';
 import {logJobError} from './jobLogger';
 
 const WORKER_PORT = Number(process.env.WORKER_PORT ?? '3201');
@@ -106,6 +106,52 @@ const server = createServer(async (request, response) => {
       const message = error instanceof Error ? error.message : 'Unknown worker error';
       logJobError(jobId, 'Failed to execute run-step', error);
       sendJson(response, 500, {error: 'Failed to execute run-step', details: message});
+      return;
+    }
+  }
+
+  if (method === 'GET' && /^\/jobs\/[^/]+\/assets$/.test(path)) {
+    const jobId = path.split('/')[2];
+    try {
+      const assets = await getJobAssets(jobId);
+      if (!assets) {
+        sendJson(response, 404, {error: 'Job not found'});
+        return;
+      }
+      sendJson(response, 200, {assets});
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown worker error';
+      logJobError(jobId, 'Failed to list assets', error);
+      sendJson(response, 500, {error: 'Failed to list assets', details: message});
+      return;
+    }
+  }
+
+  if (method === 'POST' && /^\/jobs\/[^/]+\/assets$/.test(path)) {
+    const jobId = path.split('/')[2];
+    try {
+      const payload = await readJsonBody(request);
+      const parsed = uploadJobAssetSchema.safeParse(payload);
+      if (!parsed.success) {
+        sendJson(response, 400, {
+          error: 'Invalid asset payload',
+          details: parsed.error.flatten(),
+        });
+        return;
+      }
+
+      const asset = await addJobAsset(jobId, parsed.data);
+      if (!asset) {
+        sendJson(response, 404, {error: 'Job not found'});
+        return;
+      }
+      sendJson(response, 201, asset);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown worker error';
+      logJobError(jobId, 'Failed to upload asset', error);
+      sendJson(response, 500, {error: 'Failed to upload asset', details: message});
       return;
     }
   }
