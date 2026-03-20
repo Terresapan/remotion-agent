@@ -248,7 +248,7 @@ Use this as the initial package plan.
 - `zod`
 - `deepagents`
 - `@langchain/core`
-- `@langchain/openai` for the first NVIDIA adapter, because NVIDIA exposes an OpenAI-compatible chat endpoint
+- `@langchain/openai` for the first NVIDIA adapter, using `ChatOpenAI` against NVIDIA's OpenAI-compatible endpoint
 - `execa`
 - `fs-extra` or Node built-ins
 - a thin internal OpenShell adapter or CLI wrapper
@@ -312,7 +312,7 @@ The OpenShell bridge requires the OpenShell Python SDK and gateway tooling on th
 - `openai`
 - `@langchain/openai`
 - `@langchain/anthropic`
-- NVIDIA or OpenAI-compatible provider adapters as needed
+- NVIDIA or other provider adapters as needed
 
 ### Package JSON Shape
 

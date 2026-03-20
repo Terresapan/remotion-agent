@@ -84,7 +84,7 @@ Later options:
 - other supported providers
 
 The model provider should be treated as a swappable dependency, not fused to the rest of the stack.
-For the first implementation, the worker talks to NVIDIA through an OpenAI-compatible endpoint configuration so the provider can be swapped without changing the web app.
+For the first implementation, the worker talks to NVIDIA through an OpenAI-compatible LangChain client such as `ChatOpenAI` pointed at NVIDIA's endpoint, so the provider can be swapped without changing the web app.
 
 ## Workspace Model
 

@@ -5,6 +5,7 @@ coverage
 .turbo
 *.log
 .DS_Store
+.env
 workspaces/*
 !workspaces/.gitkeep
 apps/web/.next
