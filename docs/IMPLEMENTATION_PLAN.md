@@ -33,7 +33,7 @@ Do not use it as the main application foundation because:
 Suggested structure:
 
 ```text
-/Users/terresa/Documents/Code/langgraph/remotionagent/
+/path/to/remotionagent/
   ARCHITECTURE.md
   IMPLEMENTATION_PLAN.md
   apps/
