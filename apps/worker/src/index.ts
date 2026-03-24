@@ -39,9 +39,10 @@ function resolveRepoRoot() {
 }
 
 const REPO_ROOT = resolveRepoRoot();
-const DEFAULT_TEMPLATE_PATH =
-  process.env.REMOTION_TEMPLATE_PATH ??
-  '/Users/terresa/Documents/Code/template/remotion-teaching-template';
+if (!process.env.REMOTION_TEMPLATE_PATH) {
+  throw new Error('REMOTION_TEMPLATE_PATH env var is required');
+}
+const DEFAULT_TEMPLATE_PATH = process.env.REMOTION_TEMPLATE_PATH;
 const WORKSPACES_ROOT = process.env.REMOTION_WORKSPACES_ROOT ?? path.join(REPO_ROOT, 'workspaces');
 const JOB_MEMORY_DIR = '.deepagents';
 const MODULE_PATH = fileURLToPath(import.meta.url);

@@ -25,8 +25,8 @@ services:
       - ../../.env
     volumes:
       - ../../:/app
-      - /Users/terresa/Documents/Code/template/remotion-teaching-template:/template/remotion-teaching-template:ro
-      - /Users/terresa/.config/openshell:/root/.config/openshell:ro
+      - ${REMOTION_TEMPLATE_HOST_PATH:-./template}:/template/remotion-teaching-template:ro
+      - ${OPENSHELL_CONFIG_HOST_PATH:-~/.config/openshell}:/root/.config/openshell:ro
       - ./openshell-config/gateways/openshell/metadata.json:/root/.config/openshell/gateways/openshell/metadata.json:ro
     environment:
       - NODE_ENV=development

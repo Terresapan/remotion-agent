@@ -33,7 +33,7 @@ This is closest to an `open-swe` style product boundary, but with a self-hosted 
 ### 1. Template Repo
 
 Source:
-- `/Users/terresa/Documents/Code/template/remotion-teaching-template`
+- `/path/to/your/remotion-teaching-template` (configured via `REMOTION_TEMPLATE_PATH`)
 
 Role:
 - golden project scaffold
@@ -93,7 +93,7 @@ Each video job should get its own workspace cloned from the template.
 Suggested directory shape:
 
 ```text
-/Users/terresa/Documents/Code/langgraph/remotionagent/
+/path/to/remotionagent/
   ARCHITECTURE.md
   apps/
     web/
